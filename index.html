@@ -49,74 +49,47 @@ a{
       // Made by Amitabh Borah : https://github.com/its-aomi/
       // Permission Granted for Modification and Personal Use, Must Include these two lines.
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async() => {
   const searchInput = document.getElementById('search-input');
   const submitButton = document.getElementById('submit');
 
-  async function fetchAndParseTextFile() {
-    const textFile = await fetchTextFile();
-    const entries = textFile.match(/Title : (.*) \(URL:(.*)\)/g); // Extract all the entries using a regular expression
-    const data = entries.map(entry => {
-      const [, title, url] = entry.match(/Title : (.*) \(URL:(.*)\)/); // Extract the title and URL using a regular expression
-      return { title, url };
+  const data = (await (await fetch('https://dl.netmiko.com/eff/songs.txt')).text()).match(/Title : (.*) \(URL:(.*)\)/g).map(entry => {
+    const [, title, url] = entry.match(/Title : (.*) \(URL:(.*)\)/);
+    return { title, url };
+  });
+
+  searchInput.addEventListener('input', async() => {
+    const searchTerm = searchInput.value;
+    const searchResults = data.filter(entry => {
+        return entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || entry.url.toLowerCase().includes(searchTerm.toLowerCase());
     });
-    return data;
-  }
+    displaySearchResults(searchResults);
+  });
 
-async function doSearch() {
-  const data = await fetchAndParseTextFile();
-  const searchTerm = searchInput.value; // The search term the user entered
-
-  // Execute the search
-  const searchResults = search(searchTerm, data);
-
-  // Do something with the search results (e.g. display them on the page)
-  displaySearchResults(searchResults, searchTerm);
-}
-
-
-  searchInput.addEventListener('input', doSearch);
-  submitButton.addEventListener('click', doSearch);
-
-  function search(searchTerm, data) {
-    return data.filter(entry => {
-      return entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || entry.url.toLowerCase().includes(searchTerm.toLowerCase());
+  submitButton.addEventListener('click', async() => {
+    const searchTerm = searchInput.value;
+    const searchResults = data.filter(entry => {
+        return entry.title.toLowerCase().includes(searchTerm.toLowerCase()) || entry.url.toLowerCase().includes(searchTerm.toLowerCase());
     });
-  }
+    displaySearchResults(searchResults);
+  });
 
-function displaySearchResults(results, searchTerm) {
-  const searchResultsList = document.getElementById('search-results');
-
-  // Clear the search results list
-  searchResultsList.innerHTML = '';
-
-  if (results.length > 0) {
-    // Iterate through the search results and create an HTML element for each result
-    for (const result of results) {
-      const resultElement = document.createElement('div');
-      // Highlight the search term in the title and URL
-      const highlightedTitle = result.title.replace(new RegExp(searchTerm, 'gi'), '<mark>$&</mark>');
-      const highlightedUrl = result.url.replace(new RegExp(searchTerm, 'gi'), '<mark>$&</mark>');
-      resultElement.innerHTML = `<a href="${highlightedUrl}"><h2>${highlightedTitle}</h2></a>`;
-      searchResultsList.appendChild(resultElement);
+  function displaySearchResults(results) {
+    const searchResultsList = document.getElementById('search-results');
+    searchResultsList.innerHTML = '';
+    if (results.length > 0) {
+      for (const result of results) {
+        const resultElement = document.createElement('div');
+        resultElement.innerHTML = `<a href="${result.url}"><h2>${result.title}</h2></a>`;
+        searchResultsList.appendChild(resultElement);
+      }
+    } else {
+      const noResultsElement = document.createElement('div');
+      noResultsElement.innerHTML = '<h2>No Results</h2>';
+      searchResultsList.appendChild(noResultsElement);
     }
-  } else {
-    // No results were found, so display a message
-    const noResultsElement = document.createElement('div');
-    noResultsElement.innerHTML = '<h2>No Results</h2>';
-    searchResultsList.appendChild(noResultsElement);
   }
-}
-
 });
-
-const textFileUrl = 'https://dl.netmiko.com/eff/songs.txt'; // The URL of the text file
-
-async function fetchTextFile() {
-  const response = await fetch(textFileUrl);
-  const text = await response.text();
-  return text;
-}
 </script>
 </body>
 </html>
